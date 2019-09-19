@@ -57,7 +57,7 @@ class Crawler():
         # For compatible with original data
         date_str_mingguo = '{0}/{1:02d}/{2:02d}'.format(date_tuple[0] - 1911, date_tuple[1], date_tuple[2])
 
-        for data in content['data5']:
+        for data in content['data9']:
             sign = '-' if data[9].find('green') > 0 else ''
             row = self._clean_row([
                 date_str_mingguo, # 日期
