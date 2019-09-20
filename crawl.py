@@ -10,7 +10,7 @@ import logging
 import requests
 import argparse
 from datetime import datetime, timedelta
-
+import pandas as pd
 from os import mkdir
 from os.path import isdir
 
@@ -20,6 +20,11 @@ class Crawler():
         if not isdir(prefix):
             mkdir(prefix)
         self.prefix = prefix
+        
+        if not os.path.exists('duration_coverage.csv'):
+            duration_covered = pd.DataFrame({'Date':[], 'Created_at':[]}) 
+            duration_covered.to_csv('duration_coverage.csv', index=False)
+        self.duration_covered = pd.read_csv('duration_coverage.csv') 
 
     def _clean_row(self, row):
         ''' Clean comma and spaces '''
@@ -142,27 +147,29 @@ def main():
     crawler = Crawler()
 
     # If back flag is on, crawl till 2004/2/11, else crawl one day
-    if args.back or args.check:
+    #if args.back or args.check:
         # otc first day is 2007/04/20
         # tse first day is 2004/02/11
-
-        last_day = datetime(2004, 2, 11) if args.back else first_day - timedelta(10)
-        max_error = 5
-        error_times = 0
-
-        while error_times < max_error and first_day >= last_day:
-            try:
-                crawler.get_data((first_day.year, first_day.month, first_day.day))
-                error_times = 0
-            except:
-                date_str = first_day.strftime('%Y/%m/%d')
-                logging.error('Crawl raise error {}'.format(date_str))
-                error_times += 1
-                continue
-            finally:
-                first_day -= timedelta(1)
-    else:
-        crawler.get_data((first_day.year, first_day.month, first_day.day))
+        # last_day = datetime(2004, 2, 11) if args.back else first_day - timedelta(10)
+    max_error = 5
+    error_times = 0
+    handling_date = str(first_day.strftime("%m/%d/%Y"))
+    last_day =  datetime(2004, 2, 11)
+    existed_day = crawler.duration_covered['Date'].tolist()
+    while error_times < max_error and first_day >= last_day and handling_date not in existed_day:
+        try:
+            crawler.get_data((first_day.year, first_day.month, first_day.day))
+            error_times = 0
+        except:
+            date_str = first_day.strftime('%Y/%m/%d')
+            logging.error('Crawl raise error {}'.format(date_str))
+            error_times += 1
+            continue
+        finally:
+            crawler.duration_covered = crawler.duration_covered.append(pd.DataFrame({'Date':[handling_date], 'Created_at':[datetime.now()]}), sort=True)
+            first_day -= timedelta(1)
+            handling_date = str(first_day.strftime("%m/%d/%Y"))
+    crawler.duration_covered.to_csv('duration_coverage.csv', index=False)
 
 if __name__ == '__main__':
     main()

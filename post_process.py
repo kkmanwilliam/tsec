@@ -22,7 +22,7 @@ def main():
     for file_name in file_names:
         if not file_name.endswith('.csv'):
             continue
-
+        print("Handling File: " + file_name)
         dict_rows = {}
 
         # Load and remove duplicates (use newer)
@@ -33,9 +33,9 @@ def main():
         # Sort by date
         rows = [row for date, row in sorted(
             dict_rows.items(), key=lambda x: string_to_time(x[0]))]
-
+        
         with open('{}/{}'.format(FOLDER, file_name), 'w') as file:
             file.writelines(rows)
-
+        
 if __name__ == '__main__':
     main()

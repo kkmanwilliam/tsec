@@ -1,3 +1,10 @@
+# Fixing to do list
+1. 刪除掉重複檔案
+2. 能夠自動補齊空白資料，並且處理過的日子不再處理，加速整體速度
+3. 把資料搬到 sqlite3
+4. 財報Parser
+5. 財報儲存
+
 # Taiwan Stock Exchange Crawler
 
 這是一個去爬 [台灣證券交易所](http://www.twse.com.tw/) 和 [證券櫃檯買賣中心](http://www.tpex.org.tw/) 的爬蟲，秉持著 Open Data 的理念，公開爬蟲公開資料最安心。
