@@ -153,8 +153,9 @@ def main():
         # last_day = datetime(2004, 2, 11) if args.back else first_day - timedelta(10)
     max_error = 5
     error_times = 0
-    handling_date = str(first_day.strftime("%m/%d/%Y"))
-    last_day =  datetime(2004, 2, 11)
+    handling_date = str(first_day.year-1911)+str(first_day.strftime("/%m/%d"))
+    #last_day =  datetime(2004, 2, 11) #Original Version
+    last_day =  datetime(2019, 5, 1) #Last day API modified
     existed_day = crawler.duration_covered['Date'].tolist()
     while error_times < max_error and first_day >= last_day and handling_date not in existed_day:
         try:
@@ -168,7 +169,7 @@ def main():
         finally:
             crawler.duration_covered = crawler.duration_covered.append(pd.DataFrame({'Date':[handling_date], 'Created_at':[datetime.now()]}), sort=True)
             first_day -= timedelta(1)
-            handling_date = str(first_day.strftime("%m/%d/%Y"))
+            handling_date = str(first_day.year-1911)+str(first_day.strftime("/%m/%d"))
     crawler.duration_covered.to_csv('duration_coverage.csv', index=False)
 
 if __name__ == '__main__':
