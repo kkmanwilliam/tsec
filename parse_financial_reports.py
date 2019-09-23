@@ -7,7 +7,7 @@ from tenacity import retry, stop_after_attempt, wait_fixed
 from datetime import datetime, timedelta
 
 # check all data form (sii, otc, pub, rotc)
-@retry(stop=stop_after_attempt(3), wait=wait_fixed(5))
+@retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
 def financial_statement(year, season, type='PL'):
 
     if year >= 1000:
@@ -23,36 +23,34 @@ def financial_statement(year, season, type='PL'):
     df_final = pd.DataFrame()
     
     for corp_type in ["sii", "otc", "pub", "rotc"]:
-        try:
-            r = requests.post(url, {
-                'encodeURIComponent':1,
-                'step':1,
-                'firstin':1,
-                'off':1,
-                'TYPEK':corp_type,# sii上市，otc上櫃，rotc興櫃，pub公開發行
-                'year':str(year),
-                'season':str(season),
-            })
 
-            r.encoding = 'utf8'
-                
+        r = requests.post(url, {
+            'encodeURIComponent':1,
+            'step':1,
+            'firstin':1,
+            'off':1,
+            'TYPEK':corp_type, # sii上市，otc上櫃，rotc興櫃，pub公開發行
+            'year':str(year),
+            'season':str(season),
+        })
+        r.encoding = 'utf8'
+
+        try:
             dfs = pd.read_html(r.text, header=None)
             df = pd.concat(dfs[1:], axis=0, sort=False)
             df['年份'] = pd.Series([year] * df.shape[0])
             df['季度'] = pd.Series([season] * df.shape[0])
             df = df.set_index(['公司名稱']).apply(lambda s: pd.to_numeric(s, errors='ceorce'))
-            df['年份'] = pd.Series([year] * df.shape[0])
-            df['季度'] = pd.Series([season] * df.shape[0])
             df['公司名稱'] = df.index
             df['公司代號'] = df['公司代號'].astype(str)
             df = df.set_index('公司代號')
             df_final = pd.concat([df_final, df], axis=0, sort=False)
         except Exception as e:
-            continue
+            print(corp_type, " : ", e)
             
     return df_final
 
-@retry(stop=stop_after_attempt(3), wait=wait_fixed(5))
+@retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
 def financial_analysis(year, season): # 營益分析彙總表
     
     if year >= 1000:
@@ -63,18 +61,19 @@ def financial_analysis(year, season): # 營益分析彙總表
     df_final = pd.DataFrame()
     
     for corp_type in ["sii", "otc", "pub", "rotc"]:
-        try:
-            r = requests.post(url, {
-                'encodeURIComponent':1,
-                'step':1,
-                'firstin':1,
-                'off':1,
-                'TYPEK':corp_type, #otc pub rotc sii
-                'year':str(year),
-                'season':str(season),
-            })
         
-            r.encoding = 'utf8'
+        r = requests.post(url, {
+            'encodeURIComponent':1,
+            'step':1,
+            'firstin':1,
+            'off':1,
+            'TYPEK':corp_type, #otc pub rotc sii
+            'year':str(year),
+            'season':str(season),
+        })
+        r.encoding = 'utf8'
+
+        try:
             dfs = pd.read_html(r.text, header=None)
             dfs[0].columns = dfs[0].iloc[0]
             df = dfs[0]
@@ -87,7 +86,7 @@ def financial_analysis(year, season): # 營益分析彙總表
             df = df.set_index('公司代號')
             df_final = pd.concat([df_final, df], axis=0, sort=False)
         except Exception as e:
-            continue
+        	print(corp_type, " : ", e)
 
     return df_final
 
@@ -107,6 +106,7 @@ df_FA = pd.read_csv(storage+'Financial_Analysis.csv') if os.path.exists(storage+
 # Main Part - Start from 2013-1
 for year in list(range(2013, datetime.now().year+1)):
     for season in list(range(1, 5)):
+
         handling_season = "{0}-{1}".format(str(year), str(season))
         
         record_str = handling_season+" - 綜合損益彙總表"
@@ -115,26 +115,20 @@ for year in list(range(2013, datetime.now().year+1)):
             print("Pass: ", record_str)
         else:
             print("Handling: ", record_str)
-            try:
-                df_PL = pd.concat([df_PL, financial_statement(year, season, type='PL')], axis=0, sort=False)
-                duration_covered = duration_covered.append(pd.DataFrame({'Season':[record_str], 'Created_at':[datetime.now()]}), sort=True)
-                duration_covered.to_csv(storage+'duration_coverage_FS.csv', index=False)
-            except Exception as e:
-                print("Failed")
-        
+            df_PL = pd.concat([df_PL, financial_statement(year, season, type='PL')], axis=0, sort=False)
+            duration_covered = duration_covered.append(pd.DataFrame({'Season':[record_str], 'Created_at':[datetime.now()]}), sort=True)
+            duration_covered.to_csv(storage+'duration_coverage_FS.csv', index=False)
+    
         record_str = handling_season+" - 資產負債彙總表"
 
         if record_str in existed_season:
             print("Pass: ", record_str)
         else:
             print("Handling: ", record_str)
-            try:
-                df_BS = pd.concat([df_BS, financial_statement(year, season, type='BS')], axis=0, sort=False)
-                duration_covered = duration_covered.append(pd.DataFrame({'Season':[record_str], 'Created_at':[datetime.now()]}), sort=True)
-                duration_covered.to_csv(storage+'duration_coverage_FS.csv', index=False)
-            except Exception as e:
-                print("Failed")
-                
+            df_BS = pd.concat([df_BS, financial_statement(year, season, type='BS')], axis=0, sort=False)
+            duration_covered = duration_covered.append(pd.DataFrame({'Season':[record_str], 'Created_at':[datetime.now()]}), sort=True)
+            duration_covered.to_csv(storage+'duration_coverage_FS.csv', index=False)
+            
         
         record_str = handling_season+" - 營益分析彙總表"
 
@@ -142,12 +136,9 @@ for year in list(range(2013, datetime.now().year+1)):
             print("Pass: ", record_str)
         else:
             print("Handling: ", record_str)
-            try:
-                df_FA = pd.concat([df_FA, financial_analysis(year, season)], axis=0, sort=False)
-                duration_covered = duration_covered.append(pd.DataFrame({'Season':[record_str], 'Created_at':[datetime.now()]}), sort=True)
-                duration_covered.to_csv(storage+'duration_coverage_FS.csv', index=False)
-            except Exception as e:
-                print("Failed")
+            df_FA = pd.concat([df_FA, financial_analysis(year, season)], axis=0, sort=False)
+            duration_covered = duration_covered.append(pd.DataFrame({'Season':[record_str], 'Created_at':[datetime.now()]}), sort=True)
+            duration_covered.to_csv(storage+'duration_coverage_FS.csv', index=False)
                 
 df_PL.to_csv(storage+'P&L.csv')
 df_BS.to_csv(storage+'Balance_Sheet.csv')
