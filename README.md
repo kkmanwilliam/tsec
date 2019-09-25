@@ -1,10 +1,13 @@
 # Fixing to do list
 1. 刪除掉重複檔案
 2. 能夠自動補齊空白資料，並且處理過的日子不再處理，加速整體速度
-(Done Here)
 3. 財報Parser
+(Done Here)
 4. 設計財報表格。財報儲存到 sqlite3
+    * 三大表表格
 5. 把股票數據複製一份到 sqlite3
+    * 股票代號表格
+    * 股票表格
 6. cronjob跑起來，同時跑 sqlite3 version 跟 csv version
 
 # Analysis

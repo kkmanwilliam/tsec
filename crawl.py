@@ -22,8 +22,7 @@ class Crawler():
         self.prefix = prefix
         
         if not os.path.exists('duration_coverage.csv'):
-            duration_covered = pd.DataFrame({'Date':[], 'Created_at':[]}) 
-            duration_covered.to_csv('duration_coverage.csv', index=False)
+            duration_covered = pd.DataFrame({'Date':[], 'Created_at':[]}).to_csv('duration_coverage.csv', index=False)
         self.duration_covered = pd.read_csv('duration_coverage.csv') 
 
     def _clean_row(self, row):
@@ -74,6 +73,7 @@ class Crawler():
                 data[8], # 收盤價
                 sign + data[10], # 漲跌價差
                 data[3], # 成交筆數
+                date[15], # 本益比
             ])
 
             self._record(data[0].strip(), row)
