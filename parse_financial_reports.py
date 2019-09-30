@@ -6,9 +6,18 @@ import os
 from tenacity import retry, stop_after_attempt, wait_fixed
 from datetime import datetime, timedelta
 
+storage = "//Users/adrian/Python/tsec/tsec/financial_statement/"
+
 # check all data form (sii, otc, pub, rotc)
+def operation_his(row):
+    ''' Save row to csv file '''
+    f = open(storage+'duration_coverage_FS.csv', 'a')
+    cw = csv.writer(f, lineterminator='\n')
+    cw.writerow(row)
+    f.close()
+
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
-def financial_statement(year, season, type='PL'):
+def financial_statement(year, season, record_str, type='PL'):
 
     if year >= 1000:
         year -= 1911
@@ -45,13 +54,14 @@ def financial_statement(year, season, type='PL'):
             df['公司代號'] = df['公司代號'].astype(str)
             df = df.set_index('公司代號')
             df_final = pd.concat([df_final, df], axis=0, sort=False)
+            operation_his([ record_str, datetime.now() ])
         except Exception as e:
             print(corp_type, " : ", e)
             
     return df_final
 
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
-def financial_analysis(year, season): # 營益分析彙總表
+def financial_analysis(year, season, record_str): # 營益分析彙總表
     
     if year >= 1000:
         year -= 1911
@@ -85,6 +95,8 @@ def financial_analysis(year, season): # 營益分析彙總表
             df['公司代號'] = df['公司代號'].astype(int).astype(str)
             df = df.set_index('公司代號')
             df_final = pd.concat([df_final, df], axis=0, sort=False)
+            operation_his([ record_str, datetime.now() ])
+        
         except Exception as e:
         	print(corp_type, " : ", e)
 
@@ -92,10 +104,8 @@ def financial_analysis(year, season): # 營益分析彙總表
 
 # Loading Files
 
-storage = "financial_statement/"
-
 if not os.path.exists(storage+'duration_coverage_FS.csv'):
-    pd.DataFrame({'Season':[], 'Created_at':[]}).to_csv(storage+'duration_coverage_FS.csv', index=False)
+    operation_his(["Season", "Created_at"])
 duration_covered = pd.read_csv(storage+'duration_coverage_FS.csv')
 existed_season = duration_covered['Season'].tolist()
 
@@ -115,9 +125,7 @@ for year in list(range(2013, datetime.now().year+1)):
             print("Pass: ", record_str)
         else:
             print("Handling: ", record_str)
-            df_PL = pd.concat([df_PL, financial_statement(year, season, type='PL')], axis=0, sort=False)
-            duration_covered = duration_covered.append(pd.DataFrame({'Season':[record_str], 'Created_at':[datetime.now()]}), sort=True)
-            duration_covered.to_csv(storage+'duration_coverage_FS.csv', index=False)
+            df_PL = pd.concat([df_PL, financial_statement(year, season, record_str, type='PL')], axis=0, sort=False)
     
         record_str = handling_season+" - 資產負債彙總表"
 
@@ -125,9 +133,7 @@ for year in list(range(2013, datetime.now().year+1)):
             print("Pass: ", record_str)
         else:
             print("Handling: ", record_str)
-            df_BS = pd.concat([df_BS, financial_statement(year, season, type='BS')], axis=0, sort=False)
-            duration_covered = duration_covered.append(pd.DataFrame({'Season':[record_str], 'Created_at':[datetime.now()]}), sort=True)
-            duration_covered.to_csv(storage+'duration_coverage_FS.csv', index=False)
+            df_BS = pd.concat([df_BS, financial_statement(year, season, record_str, type='BS')], axis=0, sort=False)
             
         
         record_str = handling_season+" - 營益分析彙總表"
@@ -136,10 +142,9 @@ for year in list(range(2013, datetime.now().year+1)):
             print("Pass: ", record_str)
         else:
             print("Handling: ", record_str)
-            df_FA = pd.concat([df_FA, financial_analysis(year, season)], axis=0, sort=False)
-            duration_covered = duration_covered.append(pd.DataFrame({'Season':[record_str], 'Created_at':[datetime.now()]}), sort=True)
-            duration_covered.to_csv(storage+'duration_coverage_FS.csv', index=False)
+            df_FA = pd.concat([df_FA, financial_analysis(year, season, record_str)], axis=0, sort=False)
                 
-df_PL.to_csv(storage+'P&L.csv')
-df_BS.to_csv(storage+'Balance_Sheet.csv')
-df_FA.to_csv(storage+'Financial_Analysis.csv') 
+df_PL.to_csv(storage+'P&L.csv', index=0)
+df_BS.to_csv(storage+'Balance_Sheet.csv', index=0)
+df_FA.to_csv(storage+'Financial_Analysis.csv', index=0) 
+

@@ -5,7 +5,6 @@ import re
 import sys
 import csv
 import time
-import string
 import logging
 import requests
 import argparse
@@ -13,18 +12,21 @@ from datetime import datetime, timedelta
 import pandas as pd
 from os import mkdir
 from os.path import isdir
+import sqlite3
+from pandas.io import sql
+from querybase import *
 
 class Crawler():
-    def __init__(self, prefix="data"):
+    def __init__(self, prefix='data'):
         ''' Make directory if not exist when initialize '''
         if not isdir(prefix):
             mkdir(prefix)
         self.prefix = prefix
         
         if not os.path.exists('duration_coverage.csv'):
-            self.duration_covered = pd.DataFrame({'Date':[], 'Created_at':[]}).to_csv('duration_coverage.csv', index=False)
+            self._operation_his(['Date','Created_at'])
         self.duration_covered = pd.read_csv('duration_coverage.csv') 
-
+    
     def _clean_row(self, row):
         ''' Clean comma and spaces '''
         for index, content in enumerate(row):
@@ -32,8 +34,16 @@ class Crawler():
         return row
 
     def _record(self, stock_id, row):
+        conn = sqlite3.connect('stock_analytics.db')
+        conn.execute(query_build_price_table)
         ''' Save row to csv file '''
-        f = open('{}/{}.csv'.format(self.prefix, stock_id), 'a')
+        f = open('{}/data/{}.csv'.format(self.prefix, stock_id), 'a')
+        cw = csv.writer(f, lineterminator='\n')
+        cw.writerow(row)
+        f.close()
+
+    def _operation_his(self, row):
+        f = open('duration_coverage.csv', 'a')
         cw = csv.writer(f, lineterminator='\n')
         cw.writerow(row)
         f.close()
@@ -155,6 +165,7 @@ def main():
     existed_day = crawler.duration_covered['Date'].tolist()
     execution_days = []
     handling_date = str(first_day.year-1911)+str(first_day.strftime("/%m/%d"))
+    
     while first_day >= last_day and handling_date not in existed_day:
         execution_days += [first_day]
         first_day -= timedelta(1)
@@ -172,9 +183,7 @@ def main():
             continue
         finally:
             handling_date = str(first_day.year-1911)+str(first_day.strftime("/%m/%d"))
-            crawler.duration_covered = crawler.duration_covered.append(pd.DataFrame({'Date':[handling_date], 'Created_at':[datetime.now()]}), sort=True)
-            
-    crawler.duration_covered.to_csv('duration_coverage.csv', index=False)
+            crawler._operation_his([ handling_date, datetime.now() ])
 
 if __name__ == '__main__':
     main()

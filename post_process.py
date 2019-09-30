@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 
-FOLDER = 'data'
+FOLDER = r'Python/tsec/tsec/data'
 
 def string_to_time(string):
     year, month, day = string.split('/')
